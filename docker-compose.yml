@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: painter-booking-db
+    environment:
+      POSTGRES_DB: painter_booking
+      POSTGRES_USER: painter_user
+      POSTGRES_PASSWORD: painter_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - painter-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: painter-booking-backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://painter_user:painter_pass@postgres:5432/painter_booking
+      JWT_SECRET: ${JWT_SECRET:-default-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - painter-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: painter-booking-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - painter-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  painter-network:
+    driver: bridge
