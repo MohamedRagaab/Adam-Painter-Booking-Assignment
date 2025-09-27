@@ -4,6 +4,14 @@ A comprehensive full-stack application for booking painting services built with 
 
 ## 🎨 Features
 
+### Features Demo
+
+#### Painter Adding Availability Slots
+![Painter Adding Availability Slot Demo](https://github.com/user-attachments/assets/13c75521-b19c-412b-bc5c-fc1df871c65e)
+
+#### Customer Adding a Booking Request
+![Customer Adding Booking Request Demo](https://github.com/user-attachments/assets/8fbac2b0-b9a2-4814-9c00-31e0b57fc6f8)
+
 ### Core Functionality
 - **Painter Management**: Painters can add and manage their availability slots
 - **Customer Booking**: Customers can request painting services for specific time windows
@@ -27,6 +35,24 @@ A comprehensive full-stack application for booking painting services built with 
 - **Overlap Prevention**: Automatic validation to prevent scheduling conflicts
 - **Time Zone Support**: Full timestamp handling with timezone awareness
 - **Booking Status Management**: Complete lifecycle management (pending, confirmed, cancelled)
+
+### For Painters
+1. Register as a painter
+2. Add availability slots for future dates
+3. View automatically assigned bookings
+4. Monitor booking status and customer details
+
+### For Customers
+1. Register as a customer
+2. Request bookings for specific time windows
+3. Receive immediate confirmation or alternative suggestions
+4. View booking history and status
+
+### Smart Features
+- **Automatic Painter Assignment**: Based on availability, experience, and response time
+- **Alternative Slot Recommendations**: When requested time unavailable
+- **Overlap Prevention**: Automatic validation of time conflicts
+- **Real-time Updates**: Immediate feedback on all operations
 
 ## 🛠 Tech Stack
 
@@ -269,25 +295,6 @@ docker compose up -d
 - Implement monitoring and logging
 - Use environment-specific configuration
 
-## 🔍 Features Demo
-
-### For Painters
-1. Register as a painter
-2. Add availability slots for future dates
-3. View automatically assigned bookings
-4. Monitor booking status and customer details
-
-### For Customers
-1. Register as a customer
-2. Request bookings for specific time windows
-3. Receive immediate confirmation or alternative suggestions
-4. View booking history and status
-
-### Smart Features
-- **Automatic Painter Assignment**: Based on availability, experience, and response time
-- **Alternative Slot Recommendations**: When requested time unavailable
-- **Overlap Prevention**: Automatic validation of time conflicts
-- **Real-time Updates**: Immediate feedback on all operations
 
 ## 🛡️ Security Features
 
