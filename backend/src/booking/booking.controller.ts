@@ -23,7 +23,6 @@ import {
   BookingResponseDto,
   UpdateBookingStatusDto,
   BookingQueryDto,
-  AlternativeSlotDto,
   BookingCreateResponseDto
 } from '../dto/booking.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -258,4 +257,3 @@ export class BookingController {
     };
   }
 }
-

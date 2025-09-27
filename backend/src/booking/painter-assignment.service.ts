@@ -111,21 +111,23 @@ export class PainterAssignmentService {
     requestedEnd: Date,
     windowHours: number = 24,
   ): Promise<AvailabilitySlot[]> {
-    const duration = requestedEnd.getTime() - requestedStart.getTime();
-    const searchStart = new Date(requestedStart.getTime() - windowHours * 60 * 60 * 1000);
-    const searchEnd = new Date(requestedEnd.getTime() + windowHours * 60 * 60 * 1000);
+    const durationMs = requestedEnd.getTime() - requestedStart.getTime();
+    const searchStart = new Date(requestedStart.getTime() - windowHours * 60 * 60 * 1000); // 24 hours before requested start
+    const searchEnd = new Date(requestedEnd.getTime() + windowHours * 60 * 60 * 1000); // 24 hours after requested end
 
     // Find slots that can accommodate the requested duration
     const alternatives = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.availabilitySlots', 'slot')
-      .leftJoinAndSelect('slot.painter', 'painter')
+      .innerJoinAndSelect('user.availabilitySlots', 'slot')
+      .innerJoinAndSelect('slot.painter', 'painter')
       .where('user.userType = :userType', { userType: 'painter' })
       .andWhere('slot.isBooked = :isBooked', { isBooked: false })
       .andWhere('slot.startTime >= :searchStart', { searchStart })
       .andWhere('slot.endTime <= :searchEnd', { searchEnd })
-      .andWhere('(slot.endTime - slot.startTime) >= :duration', { duration })
-      .orderBy('ABS(EXTRACT(EPOCH FROM slot.startTime) - EXTRACT(EPOCH FROM :requestedStart::timestamp))')
+      .andWhere('EXTRACT(EPOCH FROM (slot.endTime - slot.startTime)) >= :durationSeconds', { 
+        durationSeconds: durationMs / 1000
+      })
+      .orderBy('ABS(EXTRACT(EPOCH FROM slot.startTime - :requestedStart))')
       .setParameter('requestedStart', requestedStart)
       .getMany();
 

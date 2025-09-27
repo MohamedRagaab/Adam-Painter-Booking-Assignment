@@ -35,7 +35,7 @@ const PainterDashboard: React.FC = () => {
   // Fetch painter's bookings
   const { data: bookings, isLoading: loadingBookings } = useQuery({
     queryKey: ['bookings', 'my'],
-    queryFn: bookingApi.getMy,
+    queryFn: () => bookingApi.getMy(),
   });
 
   // Create availability mutation

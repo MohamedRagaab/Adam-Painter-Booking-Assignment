@@ -34,17 +34,12 @@ export class AvailabilityService {
       throw new NotFoundException('Painter not found');
     }
 
-    // Validate time range
+    
     const start = new Date(startTime);
     const end = new Date(endTime);
 
-    if (start >= end) {
-      throw new BadRequestException('End time must be after start time');
-    }
-
-    if (start < new Date()) {
-      throw new BadRequestException('Cannot create availability in the past');
-    }
+    // Validate time range
+    this.timeRangeValidation(start, end);
 
     // Check for overlapping slots
     const overlapping = await this.availabilityRepository.findOne({
@@ -80,7 +75,7 @@ export class AvailabilityService {
   async findAvailableSlots(query: FindAvailabilityQueryDto): Promise<AvailabilitySlot[]> {
     const queryBuilder = this.availabilityRepository
       .createQueryBuilder('slot')
-      .leftJoinAndSelect('slot.painter', 'painter')
+      .innerJoinAndSelect('slot.painter', 'painter')
       .where('slot.isBooked = :isBooked', { isBooked: false })
       .andWhere('slot.startTime > :now', { now: new Date() });
 
@@ -124,7 +119,7 @@ export class AvailabilityService {
   ): Promise<AvailabilitySlot[]> {
     return this.availabilityRepository
       .createQueryBuilder('slot')
-      .leftJoinAndSelect('slot.painter', 'painter')
+      .innerJoinAndSelect('slot.painter', 'painter')
       .where('slot.isBooked = :isBooked', { isBooked: false })
       .andWhere('slot.startTime <= :startTime', { startTime })
       .andWhere('slot.endTime >= :endTime', { endTime })
@@ -140,6 +135,16 @@ export class AvailabilityService {
       where: { id: slotId },
       relations: ['painter'],
     });
+  }
+
+  timeRangeValidation(startTime: Date, endTime: Date): void {
+    if (startTime >= endTime) {
+      throw new BadRequestException('End time must be after start time');
+    }
+
+    if (startTime < new Date()) {
+      throw new BadRequestException('Cannot create availability in the past');
+    }
   }
 }
 

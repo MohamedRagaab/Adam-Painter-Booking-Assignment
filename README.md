@@ -79,7 +79,7 @@ A comprehensive full-stack application for booking painting services built with 
 
 1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/MohamedRagaab/Adam-Painter-Booking-Assignment.git
 cd painter-booking-system
 ```
 
@@ -98,7 +98,7 @@ docker-compose up -d
    - **Frontend**: http://localhost:3000
    - **Backend API**: http://localhost:3001
    - **API Documentation**: http://localhost:3001/api
-   - **Database**: localhost:5432
+   - **Database**: localhost:5432 (POSTGRES_USER:painter_user, POSTGRES_PASSWORD: painter_pass)
 
 ### Development Setup
 
@@ -185,6 +185,8 @@ VITE_API_URL=http://localhost:3001
 **Note**: The docker-compose.yml file includes default values for all environment variables, so creating a `.env` file is optional for basic setup.
 
 ### Database Schema
+
+<img width="968" height="1117" alt="image" src="https://github.com/user-attachments/assets/8c0d63bc-e719-4579-97f2-36cd215a7032" />
 
 The system uses PostgreSQL with the following main entities:
 - **Users**: Painters and customers with role-based access

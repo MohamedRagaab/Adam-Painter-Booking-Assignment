@@ -102,12 +102,12 @@ export class AvailabilityController {
       endTime: slot.endTime.toISOString(),
       isBooked: slot.isBooked,
       createdAt: slot.createdAt.toISOString(),
-      painter: slot.painter ? {
+      painter: {
         id: slot.painter.id,
         firstName: slot.painter.firstName,
         lastName: slot.painter.lastName,
         email: slot.painter.email,
-      } : undefined,
+      }
     }));
   }
 }

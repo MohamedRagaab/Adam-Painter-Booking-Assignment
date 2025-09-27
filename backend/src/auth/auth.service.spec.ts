@@ -60,6 +60,7 @@ describe('AuthService', () => {
         id: '1',
         ...registerDto,
         passwordHash: hashedPassword,
+        phoneNumber: null,
       };
       const accessToken = 'access-token';
 
@@ -121,6 +122,7 @@ describe('AuthService', () => {
         userType: UserType.PAINTER,
         firstName: 'John',
         lastName: 'Doe',
+        phoneNumber: null,
       };
       const accessToken = 'access-token';
 

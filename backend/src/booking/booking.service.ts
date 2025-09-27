@@ -48,13 +48,7 @@ export class BookingService {
     const start = new Date(startTime);
     const end = new Date(endTime);
 
-    if (start >= end) {
-      throw new BadRequestException('End time must be after start time');
-    }
-
-    if (start < new Date()) {
-      throw new BadRequestException('Cannot book in the past');
-    }
+    this.availabilityService.timeRangeValidation(start, end);
 
     // Find available painters for the requested time slot
     const availableSlots = await this.availabilityService.findAvailablePaintersForTimeSlot(

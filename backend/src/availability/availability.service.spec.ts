@@ -52,8 +52,8 @@ describe('AvailabilityService', () => {
   describe('createAvailability', () => {
     const painterId = 'painter-id';
     const createAvailabilityDto = {
-      startTime: '2025-05-18T10:00:00Z',
-      endTime: '2025-05-18T14:00:00Z',
+      startTime: '2026-05-18T10:00:00Z',
+      endTime: '2026-05-18T14:00:00Z',
     };
 
     it('should successfully create availability slot', async () => {
