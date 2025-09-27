@@ -1,13 +1,11 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
     container_name: painter-booking-db
     environment:
-      POSTGRES_DB: painter_booking
-      POSTGRES_USER: painter_user
-      POSTGRES_PASSWORD: painter_pass
+      POSTGRES_DB: ${POSTGRES_DB:-painter_booking}
+      POSTGRES_USER: ${POSTGRES_USER:-painter_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-painter_pass}
     ports:
       - "5432:5432"
     volumes:
@@ -15,45 +13,66 @@ services:
       - ./backend/db/init:/docker-entrypoint-initdb.d
     networks:
       - painter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-painter_user} -d ${POSTGRES_DB:-painter_booking}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     container_name: painter-booking-backend
     ports:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://painter_user:painter_pass@postgres:5432/painter_booking
-      JWT_SECRET: ${JWT_SECRET:-default-secret}
+      JWT_SECRET: ${JWT_SECRET:-default-secret-change-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       NODE_ENV: ${NODE_ENV:-development}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
     networks:
       - painter-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: painter-booking-frontend
     ports:
       - "3000:3000"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
     depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      backend:
+        condition: service_healthy
     networks:
       - painter-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:

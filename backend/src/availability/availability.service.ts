@@ -1,0 +1,145 @@
+import { 
+  Injectable, 
+  BadRequestException, 
+  NotFoundException,
+  ConflictException 
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between, LessThan, MoreThan } from 'typeorm';
+import { AvailabilitySlot } from '../entities/availability-slot.entity';
+import { User, UserType } from '../entities/user.entity';
+import { CreateAvailabilityDto, FindAvailabilityQueryDto } from '../dto/availability.dto';
+
+@Injectable()
+export class AvailabilityService {
+  constructor(
+    @InjectRepository(AvailabilitySlot)
+    private availabilityRepository: Repository<AvailabilitySlot>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  async createAvailability(
+    painterId: string,
+    createAvailabilityDto: CreateAvailabilityDto,
+  ): Promise<AvailabilitySlot> {
+    const { startTime, endTime } = createAvailabilityDto;
+    
+    // Validate painter exists and is a painter
+    const painter = await this.userRepository.findOne({
+      where: { id: painterId, userType: UserType.PAINTER },
+    });
+
+    if (!painter) {
+      throw new NotFoundException('Painter not found');
+    }
+
+    // Validate time range
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (start >= end) {
+      throw new BadRequestException('End time must be after start time');
+    }
+
+    if (start < new Date()) {
+      throw new BadRequestException('Cannot create availability in the past');
+    }
+
+    // Check for overlapping slots
+    const overlapping = await this.availabilityRepository.findOne({
+      where: {
+        painterId,
+        startTime: LessThan(end),
+        endTime: MoreThan(start),
+      },
+    });
+
+    if (overlapping) {
+      throw new ConflictException('Time slot overlaps with existing availability');
+    }
+
+    // Create availability slot
+    const availabilitySlot = this.availabilityRepository.create({
+      painterId,
+      startTime: start,
+      endTime: end,
+    });
+
+    return this.availabilityRepository.save(availabilitySlot);
+  }
+
+  async findPainterAvailability(painterId: string): Promise<AvailabilitySlot[]> {
+    return this.availabilityRepository.find({
+      where: { painterId },
+      relations: ['painter'],
+      order: { startTime: 'ASC' },
+    });
+  }
+
+  async findAvailableSlots(query: FindAvailabilityQueryDto): Promise<AvailabilitySlot[]> {
+    const queryBuilder = this.availabilityRepository
+      .createQueryBuilder('slot')
+      .leftJoinAndSelect('slot.painter', 'painter')
+      .where('slot.isBooked = :isBooked', { isBooked: false })
+      .andWhere('slot.startTime > :now', { now: new Date() });
+
+    if (query.start) {
+      queryBuilder.andWhere('slot.startTime >= :start', { start: new Date(query.start) });
+    }
+
+    if (query.end) {
+      queryBuilder.andWhere('slot.endTime <= :end', { end: new Date(query.end) });
+    }
+
+    if (query.painterId) {
+      queryBuilder.andWhere('slot.painterId = :painterId', { painterId: query.painterId });
+    }
+
+    return queryBuilder
+      .orderBy('slot.startTime', 'ASC')
+      .getMany();
+  }
+
+  async isSlotAvailable(
+    painterId: string,
+    startTime: Date,
+    endTime: Date,
+  ): Promise<boolean> {
+    const availableSlot = await this.availabilityRepository.findOne({
+      where: {
+        painterId,
+        isBooked: false,
+        startTime: LessThan(startTime),
+        endTime: MoreThan(endTime),
+      },
+    });
+
+    return !!availableSlot;
+  }
+
+  async findAvailablePaintersForTimeSlot(
+    startTime: Date,
+    endTime: Date,
+  ): Promise<AvailabilitySlot[]> {
+    return this.availabilityRepository
+      .createQueryBuilder('slot')
+      .leftJoinAndSelect('slot.painter', 'painter')
+      .where('slot.isBooked = :isBooked', { isBooked: false })
+      .andWhere('slot.startTime <= :startTime', { startTime })
+      .andWhere('slot.endTime >= :endTime', { endTime })
+      .getMany();
+  }
+
+  async markSlotAsBooked(slotId: string): Promise<void> {
+    await this.availabilityRepository.update(slotId, { isBooked: true });
+  }
+
+  async findSlotById(slotId: string): Promise<AvailabilitySlot | null> {
+    return this.availabilityRepository.findOne({
+      where: { id: slotId },
+      relations: ['painter'],
+    });
+  }
+}
+
