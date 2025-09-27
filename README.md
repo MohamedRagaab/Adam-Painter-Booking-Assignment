@@ -15,6 +15,13 @@ A comprehensive full-stack application for booking painting services built with 
 - **Painters**: Create availability slots, view assigned bookings, manage schedules
 - **Customers**: Book services, view booking history, access alternative recommendations
 
+### Frontend Pages & Routing
+- **Authentication**: `/login`, `/register` - User authentication pages
+- **Painter Dashboard**: `/painter/dashboard` - Painter-specific interface for managing availability and bookings
+- **Customer Dashboard**: `/customer/dashboard` - Customer interface for booking services
+- **Bookings Management**: `/bookings` - Universal bookings page for both user types
+- **Protected Routes**: Role-based access control with automatic redirects
+
 ### Business Logic
 - **Intelligent Painter Selection**: Multi-criteria scoring system for optimal painter assignment
 - **Overlap Prevention**: Automatic validation to prevent scheduling conflicts
@@ -24,27 +31,28 @@ A comprehensive full-stack application for booking painting services built with 
 ## 🛠 Tech Stack
 
 ### Backend
-- **NestJS**: Modern Node.js framework with TypeScript support
-- **TypeScript**: Type-safe development
-- **PostgreSQL**: Robust relational database with advanced features
-- **TypeORM**: Object-relational mapping with entity relationships
-- **JWT Authentication**: Secure token-based authentication
+- **NestJS 11**: Modern Node.js framework with TypeScript support
+- **TypeScript 5.7**: Type-safe development with latest features
+- **PostgreSQL 15**: Robust relational database with advanced features
+- **TypeORM 0.3.27**: Object-relational mapping with entity relationships
+- **JWT Authentication**: Secure token-based authentication with Passport.js
 - **Swagger/OpenAPI**: Comprehensive API documentation
-- **Bcrypt**: Secure password hashing
+- **Bcrypt 6.0.0**: Secure password hashing
 - **Class Validator**: Request validation and transformation
+- **UUID**: Unique identifier generation
 
 ### Frontend
-- **React 18**: Modern React with concurrent features
+- **React 19**: Modern React with concurrent features
 - **TypeScript**: Full type safety across the application
-- **Vite**: Fast development server and build tool
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
-- **React Router**: Client-side routing with protected routes
-- **React Query**: Server state management and caching
-- **React Hook Form**: Performant form handling with validation
-- **Yup**: Schema validation for forms
-- **Axios**: HTTP client with interceptors
-- **React Hot Toast**: Beautiful toast notifications
-- **Date-fns**: Date manipulation and formatting
+- **Vite 7**: Fast development server and build tool
+- **Tailwind CSS 3.4**: Utility-first CSS framework for rapid UI development
+- **React Router 7**: Client-side routing with protected routes
+- **TanStack React Query 5**: Server state management and caching
+- **React Hook Form 7**: Performant form handling with validation
+- **Yup 1.7**: Schema validation for forms
+- **Axios 1.12**: HTTP client with interceptors
+- **React Hot Toast 2.6**: Beautiful toast notifications
+- **Date-fns 4.1**: Date manipulation and formatting
 
 ### Infrastructure & DevOps
 - **Docker**: Containerization for consistent environments
@@ -77,8 +85,8 @@ cd painter-booking-system
 
 2. **Configure environment:**
 ```bash
-cp env.example .env
-# Edit .env file with your production values
+# Create .env file with your production values
+# The docker-compose.yml uses default values if .env is not present
 ```
 
 3. **Start all services:**
@@ -122,42 +130,42 @@ npm run dev
 painter-booking-system/
 ├── backend/                    # NestJS Backend Application
 │   ├── src/
-│   │   ├── auth/              # Authentication module
-│   │   ├── availability/      # Availability management
+│   │   ├── auth/              # Authentication module (JWT, guards, decorators)
+│   │   ├── availability/      # Availability management (CRUD operations)
 │   │   ├── booking/           # Booking system & painter assignment
-│   │   ├── entities/          # TypeORM entities
-│   │   ├── dto/               # Data transfer objects
-│   │   └── config/            # Configuration modules
+│   │   ├── entities/          # TypeORM entities (User, Booking, AvailabilitySlot)
+│   │   ├── dto/               # Data transfer objects (validation schemas)
+│   │   └── config/            # Configuration modules (database, etc.)
 │   ├── db/init/               # Database initialization scripts
+│   ├── test/                  # Backend test files
+│   ├── dist/                  # Compiled TypeScript output
 │   ├── Dockerfile             # Backend container definition
 │   └── package.json
 ├── frontend/                   # React Frontend Application
 │   ├── src/
-│   │   ├── components/        # Reusable React components
-│   │   ├── pages/             # Page components
-│   │   ├── contexts/          # React contexts (Auth, etc.)
-│   │   ├── services/          # API service layer
+│   │   ├── components/        # Reusable React components (Layout, ProtectedRoute)
+│   │   ├── pages/             # Page components (Login, Register, Dashboards)
+│   │   ├── contexts/          # React contexts (AuthContext)
+│   │   ├── services/          # API service layer (API client)
 │   │   ├── types/             # TypeScript type definitions
-│   │   └── hooks/             # Custom React hooks
+│   │   └── assets/            # Static assets
+│   ├── public/                # Public static files
 │   ├── nginx.conf             # Nginx configuration
 │   ├── Dockerfile             # Frontend container definition
 │   └── package.json
-├── docker-compose.yml         # Service orchestration
-├── env.example                # Environment template
-├── painter-booking-system-requirement.md  # BDD Requirements
-├── painter-booking-system-HLD.md         # High-Level Design
-└── README.md                  # This file
+├── docker-compose.yml         # Service orchestration (PostgreSQL, Backend, Frontend)
+├── README.md                  # This file
+└── .gitignore                 # Git ignore patterns
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env` file from `env.example` and configure:
+Create a `.env` file with the following variables (optional - defaults are provided in docker-compose.yml):
 
 ```env
 # Database Configuration
-DATABASE_URL=postgresql://painter_user:painter_pass@postgres:5432/painter_booking
 POSTGRES_DB=painter_booking
 POSTGRES_USER=painter_user
 POSTGRES_PASSWORD=painter_pass
@@ -168,12 +176,13 @@ JWT_EXPIRES_IN=7d
 
 # Application Configuration
 NODE_ENV=development
-PORT=3001
 FRONTEND_URL=http://localhost:3000
 
 # Frontend Configuration
 VITE_API_URL=http://localhost:3001
 ```
+
+**Note**: The docker-compose.yml file includes default values for all environment variables, so creating a `.env` file is optional for basic setup.
 
 ### Database Schema
 
@@ -212,23 +221,27 @@ The API includes comprehensive Swagger documentation accessible at `/api` endpoi
 ## 📚 API Documentation
 
 ### Authentication Endpoints
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User authentication
+- `POST /auth/register` - User registration (supports both painters and customers)
+- `POST /auth/login` - User authentication with JWT token response
 
 ### Availability Endpoints
 - `POST /availability` - Create availability slot (Painters only)
-- `GET /availability/me` - Get painter's availability
-- `GET /availability` - Get available slots (with filtering)
+- `GET /availability/me` - Get painter's own availability slots
+- `GET /availability` - Get available slots with filtering options
+- `DELETE /availability/:id` - Delete availability slot (Painters only)
 
 ### Booking Endpoints
-- `POST /bookings` - Create booking request
-- `GET /bookings/me` - Get user's bookings
-- `GET /bookings/:id` - Get specific booking
+- `POST /bookings` - Create booking request (Customers only)
+- `GET /bookings/me` - Get user's bookings (role-based filtering)
+- `GET /bookings/:id` - Get specific booking details
 - `PATCH /bookings/:id/status` - Update booking status
-- `POST /bookings/alternative/:slotId` - Book alternative slot
+- `POST /bookings/alternative/:slotId` - Book alternative slot (Customers only)
+
+### Health Check
+- `GET /` - Service health check endpoint
 
 ### Response Formats
-All APIs return consistent JSON responses with proper error handling and status codes.
+All APIs return consistent JSON responses with proper error handling and status codes. The API includes comprehensive Swagger documentation accessible at `/api` endpoint.
 
 ## 🚀 Deployment
 
@@ -324,34 +337,3 @@ All services include health checks accessible at:
 - **Architecture**: `painter-booking-system-HLD.md` - High-level design document
 - **API Docs**: Available at `/api` endpoint when running
 - **Database Schema**: See `backend/db/init/01-init.sql`
-
-## 🤝 Contributing
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit changes**: `git commit -m 'Add amazing feature'`
-4. **Push to branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
-
-### Development Guidelines
-- Follow TypeScript best practices
-- Write tests for new features
-- Update documentation as needed
-- Use conventional commit messages
-- Ensure all health checks pass
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-1. Check the troubleshooting section above
-2. Review the API documentation at `/api`
-3. Examine the requirements and design documents
-4. Open an issue on the repository
-
----
-
-**Built with ❤️ using modern web technologies**
