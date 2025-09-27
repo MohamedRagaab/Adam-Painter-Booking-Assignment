@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { toast } from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import { bookingApi } from '../services/api';
+import { convertToUTC } from '../utils/timezone';
 import type { CreateBookingRequest, AlternativeSlot } from '../types';
 
 const schema = yup.object({
@@ -78,7 +79,16 @@ const CustomerDashboard: React.FC = () => {
   });
 
   const onSubmit = (data: CreateBookingRequest) => {
-    createBookingMutation.mutate(data);
+    try {
+      // Convert local time to UTC before sending to server
+      const utcData = {
+        startTime: convertToUTC(data.startTime),
+        endTime: convertToUTC(data.endTime),
+      };
+      createBookingMutation.mutate(utcData);
+    } catch (error) {
+      toast.error('Invalid date format. Please check your input.');
+    }
   };
 
   const handleBookAlternative = (slot: AlternativeSlot) => {

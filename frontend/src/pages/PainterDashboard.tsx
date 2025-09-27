@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { toast } from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import { availabilityApi, bookingApi } from '../services/api';
+import { convertToUTC } from '../utils/timezone';
 import type { CreateAvailabilityRequest } from '../types';
 
 const schema = yup.object({
@@ -53,7 +54,16 @@ const PainterDashboard: React.FC = () => {
   });
 
   const onSubmit = (data: CreateAvailabilityRequest) => {
-    createAvailabilityMutation.mutate(data);
+    try {
+      // Convert local time to UTC before sending to server
+      const utcData = {
+        startTime: convertToUTC(data.startTime),
+        endTime: convertToUTC(data.endTime),
+      };
+      createAvailabilityMutation.mutate(utcData);
+    } catch (error) {
+      toast.error('Invalid date format. Please check your input.');
+    }
   };
 
   const formatDateTime = (dateString: string) => {

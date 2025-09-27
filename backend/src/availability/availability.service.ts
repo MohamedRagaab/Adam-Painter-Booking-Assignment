@@ -138,6 +138,10 @@ export class AvailabilityService {
   }
 
   timeRangeValidation(startTime: Date, endTime: Date): void {
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      throw new BadRequestException('Invalid date format. Please provide valid UTC timestamps.');
+    }
+
     if (startTime >= endTime) {
       throw new BadRequestException('End time must be after start time');
     }
