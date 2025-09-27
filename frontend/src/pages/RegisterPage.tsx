@@ -25,7 +25,7 @@ const RegisterPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterRequest>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema) as any,
   });
 
   const onSubmit = async (data: RegisterRequest) => {

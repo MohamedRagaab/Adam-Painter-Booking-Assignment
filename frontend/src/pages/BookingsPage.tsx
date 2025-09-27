@@ -10,7 +10,7 @@ const BookingsPage: React.FC = () => {
   // Fetch user's bookings
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['bookings', 'my'],
-    queryFn: bookingApi.getMy,
+    queryFn: () => bookingApi.getMy(),
   });
 
   const formatDateTime = (dateString: string) => {

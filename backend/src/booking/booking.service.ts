@@ -36,11 +36,11 @@ export class BookingService {
     const { startTime, endTime } = createBookingDto;
     
     // Validate customer exists and is a customer
-    const customer = await this.userRepository.findOne({
-      where: { id: customerId, userType: UserType.CUSTOMER },
+    const user = await this.userRepository.findOne({
+      where: { id: customerId },
     });
 
-    if (!customer) {
+    if (!user || user.userType !== UserType.CUSTOMER) {
       throw new NotFoundException('Customer not found');
     }
 
@@ -195,11 +195,11 @@ export class BookingService {
     duration: number,
   ): Promise<Booking> {
     // Validate customer
-    const customer = await this.userRepository.findOne({
-      where: { id: customerId, userType: UserType.CUSTOMER },
+    const user = await this.userRepository.findOne({
+      where: { id: customerId },
     });
 
-    if (!customer) {
+    if (!user || user.userType !== UserType.CUSTOMER) {
       throw new NotFoundException('Customer not found');
     }
 

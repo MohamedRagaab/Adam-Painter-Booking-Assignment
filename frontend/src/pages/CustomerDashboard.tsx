@@ -31,7 +31,7 @@ const CustomerDashboard: React.FC = () => {
   // Fetch customer's bookings
   const { data: bookings, isLoading: loadingBookings } = useQuery({
     queryKey: ['bookings', 'my'],
-    queryFn: bookingApi.getMy,
+    queryFn: () => bookingApi.getMy(),
   });
 
   // Create booking mutation
@@ -48,7 +48,11 @@ const CustomerDashboard: React.FC = () => {
       } else if (data.alternatives) {
         setAlternatives(data.alternatives);
         setShowAlternatives(true);
-        toast.info('No painters available for your requested time. Here are some alternatives:');
+        if (data.alternatives.length > 0) {
+          toast('No painters available for your requested time. Here are some alternatives:');
+        } else {
+          toast.error('No painters available for your requested time. No alternative slots found.');
+        }
       }
     },
     onError: () => {
@@ -177,38 +181,65 @@ const CustomerDashboard: React.FC = () => {
             )}
 
             {/* Alternative Slots */}
-            {showAlternatives && alternatives.length > 0 && (
+            {showAlternatives && (
               <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                 <h4 className="text-lg font-medium text-blue-900 mb-4">
                   Alternative Time Slots
                 </h4>
-                <p className="text-sm text-blue-700 mb-4">
-                  Your requested time is not available, but here are some alternatives:
-                </p>
-                <div className="space-y-3">
-                  {alternatives.map((slot) => (
-                    <div
-                      key={slot.id}
-                      className="flex items-center justify-between p-3 bg-white border border-blue-200 rounded-lg"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {slot.painter.firstName} {slot.painter.lastName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {formatDateTime(slot.startTime)} - {format(parseISO(slot.endTime), 'HH:mm')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleBookAlternative(slot)}
-                        disabled={bookAlternativeMutation.isPending}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                      >
-                        {bookAlternativeMutation.isPending ? 'Booking...' : 'Book This'}
-                      </button>
+                {alternatives.length > 0 ? (
+                  <>
+                    <p className="text-sm text-blue-700 mb-4">
+                      Your requested time is not available, but here are some alternatives:
+                    </p>
+                    <div className="space-y-3">
+                      {alternatives.map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="flex items-center justify-between p-3 bg-white border border-blue-200 rounded-lg"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {slot.painter.firstName} {slot.painter.lastName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {formatDateTime(slot.startTime)} - {format(parseISO(slot.endTime), 'HH:mm')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleBookAlternative(slot)}
+                            disabled={bookAlternativeMutation.isPending}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                          >
+                            {bookAlternativeMutation.isPending ? 'Booking...' : 'Book This'}
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-red-500 mb-2">
+                      <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-red-700 font-medium mb-2">
+                      No alternative time slots available
+                    </p>
+                    <p className="text-xs text-red-600">
+                      Please try a different time or contact support for assistance.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowAlternatives(false);
+                        setAlternatives([]);
+                      }}
+                      className="mt-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

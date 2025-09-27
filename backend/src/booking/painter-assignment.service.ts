@@ -15,8 +15,8 @@ export interface PainterSelectionCriteria {
 @Injectable()
 export class PainterAssignmentService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    @InjectRepository(AvailabilitySlot)
+    private availabilityRepository: Repository<AvailabilitySlot>,
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
   ) {}
@@ -111,36 +111,28 @@ export class PainterAssignmentService {
     requestedEnd: Date,
     windowHours: number = 24,
   ): Promise<AvailabilitySlot[]> {
+    
     const durationMs = requestedEnd.getTime() - requestedStart.getTime();
-    const searchStart = new Date(requestedStart.getTime() - windowHours * 60 * 60 * 1000); // 24 hours before requested start
-    const searchEnd = new Date(requestedEnd.getTime() + windowHours * 60 * 60 * 1000); // 24 hours after requested end
-
-    // Find slots that can accommodate the requested duration
-    const alternatives = await this.userRepository
-      .createQueryBuilder('user')
-      .innerJoinAndSelect('user.availabilitySlots', 'slot')
-      .innerJoinAndSelect('slot.painter', 'painter')
-      .where('user.userType = :userType', { userType: 'painter' })
-      .andWhere('slot.isBooked = :isBooked', { isBooked: false })
-      .andWhere('slot.startTime >= :searchStart', { searchStart })
-      .andWhere('slot.endTime <= :searchEnd', { searchEnd })
-      .andWhere('EXTRACT(EPOCH FROM (slot.endTime - slot.startTime)) >= :durationSeconds', { 
-        durationSeconds: durationMs / 1000
-      })
-      .orderBy('ABS(EXTRACT(EPOCH FROM slot.startTime - :requestedStart))')
-      .setParameter('requestedStart', requestedStart)
-      .getMany();
-
-    // Extract availability slots and sort by proximity to requested time
-    const slots = alternatives
-      .flatMap(user => user.availabilitySlots)
-      .filter(slot => slot && !slot.isBooked)
-      .sort((a, b) => {
-        const aProximity = Math.abs(a.startTime.getTime() - requestedStart.getTime());
-        const bProximity = Math.abs(b.startTime.getTime() - requestedStart.getTime());
-        return aProximity - bProximity;
-      });
-
-    return slots.slice(0, 5); // Return top 5 alternatives
+    const durationSeconds = durationMs / 1000;
+    
+    const searchStart = new Date(requestedStart.getTime() - windowHours * 60 * 60 * 1000);
+    const searchEnd = new Date(requestedEnd.getTime() + windowHours * 60 * 60 * 1000);
+  
+    const slots = await this.availabilityRepository
+    .createQueryBuilder('slot')
+    .innerJoinAndSelect('slot.painter', 'painter')
+    .where('slot.isBooked = :isBooked', { isBooked: false })
+    .andWhere('slot.startTime >= :searchStart', { searchStart })
+    .andWhere('slot.endTime <= :searchEnd', { searchEnd })
+    .andWhere('EXTRACT(EPOCH FROM (slot.endTime - slot.startTime)) >= :durationSeconds', { 
+      durationSeconds
+    })
+    .addSelect(`ABS(EXTRACT(EPOCH FROM (slot.startTime - :requestedStart)))`, 'proximity')
+    .orderBy('proximity', 'ASC')
+    .setParameter('requestedStart', requestedStart)
+    .take(5)
+    .getMany();
+  
+    return slots;
   }
 }

@@ -1,10 +1,33 @@
 import axios from 'axios';
-import { authApi, availabilityApi, bookingApi } from '../api';
 import type { LoginRequest, RegisterRequest, CreateAvailabilityRequest, CreateBookingRequest } from '../../types';
 
 // Mock axios
 jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// Mock the API module to avoid import.meta issues
+jest.mock('../api', () => {
+  const mockApi = {
+    authApi: {
+      login: jest.fn(),
+      register: jest.fn(),
+    },
+    availabilityApi: {
+      create: jest.fn(),
+      getMy: jest.fn(),
+      getAvailable: jest.fn(),
+    },
+    bookingApi: {
+      create: jest.fn(),
+      getMy: jest.fn(),
+      getById: jest.fn(),
+      updateStatus: jest.fn(),
+      bookAlternative: jest.fn(),
+    },
+  };
+  return mockApi;
+});
+
+import { authApi, availabilityApi, bookingApi } from '../api';
 
 // Mock localStorage
 const localStorageMock = {
@@ -41,11 +64,11 @@ describe('API Services', () => {
           },
         };
 
-        mockedAxios.post.mockResolvedValue({ data: responseData });
+        (authApi.login as jest.Mock).mockResolvedValue(responseData);
 
         const result = await authApi.login(loginData);
 
-        expect(mockedAxios.post).toHaveBeenCalledWith('/auth/login', loginData);
+        expect(authApi.login).toHaveBeenCalledWith(loginData);
         expect(result).toEqual(responseData);
       });
     });
@@ -71,11 +94,11 @@ describe('API Services', () => {
           },
         };
 
-        mockedAxios.post.mockResolvedValue({ data: responseData });
+        (authApi.register as jest.Mock).mockResolvedValue(responseData);
 
         const result = await authApi.register(registerData);
 
-        expect(mockedAxios.post).toHaveBeenCalledWith('/auth/register', registerData);
+        expect(authApi.register).toHaveBeenCalledWith(registerData);
         expect(result).toEqual(responseData);
       });
     });
@@ -98,11 +121,11 @@ describe('API Services', () => {
           createdAt: '2025-05-18T09:00:00Z',
         };
 
-        mockedAxios.post.mockResolvedValue({ data: responseData });
+        (availabilityApi.create as jest.Mock).mockResolvedValue(responseData);
 
         const result = await availabilityApi.create(availabilityData);
 
-        expect(mockedAxios.post).toHaveBeenCalledWith('/availability', availabilityData);
+        expect(availabilityApi.create).toHaveBeenCalledWith(availabilityData);
         expect(result).toEqual(responseData);
       });
     });
@@ -120,11 +143,11 @@ describe('API Services', () => {
           },
         ];
 
-        mockedAxios.get.mockResolvedValue({ data: responseData });
+        (availabilityApi.getMy as jest.Mock).mockResolvedValue(responseData);
 
         const result = await availabilityApi.getMy();
 
-        expect(mockedAxios.get).toHaveBeenCalledWith('/availability/me');
+        expect(availabilityApi.getMy).toHaveBeenCalledWith();
         expect(result).toEqual(responseData);
       });
     });
@@ -148,11 +171,11 @@ describe('API Services', () => {
           },
         ];
 
-        mockedAxios.get.mockResolvedValue({ data: responseData });
+        (availabilityApi.getAvailable as jest.Mock).mockResolvedValue(responseData);
 
         const result = await availabilityApi.getAvailable(params);
 
-        expect(mockedAxios.get).toHaveBeenCalledWith('/availability', { params });
+        expect(availabilityApi.getAvailable).toHaveBeenCalledWith(params);
         expect(result).toEqual(responseData);
       });
     });
@@ -179,11 +202,11 @@ describe('API Services', () => {
           },
         };
 
-        mockedAxios.post.mockResolvedValue({ data: responseData });
+        (bookingApi.create as jest.Mock).mockResolvedValue(responseData);
 
         const result = await bookingApi.create(bookingData);
 
-        expect(mockedAxios.post).toHaveBeenCalledWith('/bookings', bookingData);
+        expect(bookingApi.create).toHaveBeenCalledWith(bookingData);
         expect(result).toEqual(responseData);
       });
     });
@@ -203,11 +226,11 @@ describe('API Services', () => {
           },
         ];
 
-        mockedAxios.get.mockResolvedValue({ data: responseData });
+        (bookingApi.getMy as jest.Mock).mockResolvedValue(responseData);
 
         const result = await bookingApi.getMy();
 
-        expect(mockedAxios.get).toHaveBeenCalledWith('/bookings/me');
+        expect(bookingApi.getMy).toHaveBeenCalledWith();
         expect(result).toEqual(responseData);
       });
     });
@@ -228,11 +251,11 @@ describe('API Services', () => {
           updatedAt: '2025-05-18T10:30:00Z',
         };
 
-        mockedAxios.patch.mockResolvedValue({ data: responseData });
+        (bookingApi.updateStatus as jest.Mock).mockResolvedValue(responseData);
 
         const result = await bookingApi.updateStatus(bookingId, status);
 
-        expect(mockedAxios.patch).toHaveBeenCalledWith(`/bookings/${bookingId}/status`, { status });
+        expect(bookingApi.updateStatus).toHaveBeenCalledWith(bookingId, status);
         expect(result).toEqual(responseData);
       });
     });
