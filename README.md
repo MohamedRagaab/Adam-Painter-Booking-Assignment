@@ -7,10 +7,10 @@ A comprehensive full-stack application for booking painting services built with 
 ### Features Demo
 
 #### Painter Adding Availability Slots
-![Painter Adding Availability Slot Demo](https://github.com/user-attachments/assets/13c75521-b19c-412b-bc5c-fc1df871c65e)
+![Painter Adding Availability Slot Demo](https://github.com/user-attachments/assets/d982efa4-90f8-4707-8758-ca195e32ff17)
 
 #### Customer Adding a Booking Request
-![Customer Adding Booking Request Demo](https://github.com/user-attachments/assets/8fbac2b0-b9a2-4814-9c00-31e0b57fc6f8)
+![Customer Adding Booking Request Demo](https://github.com/user-attachments/assets/d8abcb25-8c0a-4c7f-bcab-b31299620e33)
 
 ### Core Functionality
 - **Painter Management**: Painters can add and manage their availability slots
