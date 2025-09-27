@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { Booking, BookingStatus } from '../entities/booking.entity';
@@ -37,12 +37,17 @@ describe('BookingService', () => {
     timeRangeValidation: jest.fn(),
     findAvailablePaintersForTimeSlot: jest.fn(),
     markSlotAsBooked: jest.fn(),
+    markSlotAsAvailable: jest.fn(),
     findSlotById: jest.fn(),
   };
 
   const mockPainterAssignmentService = {
     findAlternativeSlots: jest.fn(),
     findBestPainter: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -64,6 +69,10 @@ describe('BookingService', () => {
         {
           provide: PainterAssignmentService,
           useValue: mockPainterAssignmentService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -121,6 +130,13 @@ describe('BookingService', () => {
         availabilitySlot: availableSlot,
       };
 
+      // Mock the transaction to execute the callback function
+      mockDataSource.transaction.mockImplementation(async (callback) => {
+        return callback({
+          // Mock transactional entity manager if needed
+        });
+      });
+
       mockUserRepository.findOne.mockResolvedValue(customer);
       mockAvailabilityService.findAvailablePaintersForTimeSlot.mockResolvedValue([availableSlot]);
       mockPainterAssignmentService.findBestPainter.mockResolvedValue(selectedSlot);
@@ -150,7 +166,7 @@ describe('BookingService', () => {
         endTime: new Date(createBookingDto.endTime),
         status: BookingStatus.CONFIRMED,
       });
-      expect(mockAvailabilityService.markSlotAsBooked).toHaveBeenCalledWith(selectedSlot.id);
+      expect(mockAvailabilityService.markSlotAsBooked).toHaveBeenCalledWith(selectedSlot);
       expect(result).toEqual({ booking: bookingWithRelations });
     });
 
@@ -175,6 +191,13 @@ describe('BookingService', () => {
           },
         },
       ];
+
+      // Mock the transaction to execute the callback function
+      mockDataSource.transaction.mockImplementation(async (callback) => {
+        return callback({
+          // Mock transactional entity manager if needed
+        });
+      });
 
       mockUserRepository.findOne.mockResolvedValue(customer);
       mockAvailabilityService.findAvailablePaintersForTimeSlot.mockResolvedValue([]);
@@ -462,6 +485,14 @@ describe('BookingService', () => {
     });
 
     it('should free up availability slot when booking is cancelled', async () => {
+      const availabilitySlot = {
+        id: 'slot-id',
+        painterId: 'painter-id',
+        startTime: new Date('2025-05-18T10:00:00Z'),
+        endTime: new Date('2025-05-18T12:00:00Z'),
+        isBooked: true,
+      };
+
       const existingBooking = {
         id: bookingId,
         customerId: 'customer-id',
@@ -474,7 +505,7 @@ describe('BookingService', () => {
         updatedAt: new Date('2025-01-01T00:00:00Z'),
         customer: undefined,
         painter: undefined,
-        availabilitySlot: undefined,
+        availabilitySlot,
       } as Partial<Booking>;
 
       const updateCancelDto: UpdateBookingStatusDto = {
@@ -489,7 +520,7 @@ describe('BookingService', () => {
 
       await service.updateBookingStatus(bookingId, updateCancelDto, userId);
 
-      expect(mockAvailabilityService.markSlotAsBooked).toHaveBeenCalledWith('slot-id');
+      expect(mockAvailabilityService.markSlotAsAvailable).toHaveBeenCalledWith(existingBooking.availabilitySlot);
     });
   });
 
@@ -551,7 +582,7 @@ describe('BookingService', () => {
         endTime: new Date(slot.startTime.getTime() + duration),
         status: BookingStatus.CONFIRMED,
       });
-      expect(mockAvailabilityService.markSlotAsBooked).toHaveBeenCalledWith(slotId);
+      expect(mockAvailabilityService.markSlotAsBooked).toHaveBeenCalledWith(slot);
       expect(result).toEqual(bookingWithRelations);
     });
 

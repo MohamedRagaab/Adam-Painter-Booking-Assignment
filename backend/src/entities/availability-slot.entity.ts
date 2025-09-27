@@ -7,6 +7,7 @@ import {
   JoinColumn,
   OneToMany,
   Check,
+  VersionColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -39,6 +40,9 @@ export class AvailabilitySlot {
 
   @OneToMany('Booking', 'availabilitySlot')
   bookings: any[];
+
+  @VersionColumn()
+  version: number;
 
   get duration(): number {
     return this.endTime.getTime() - this.startTime.getTime();

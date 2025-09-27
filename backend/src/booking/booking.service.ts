@@ -5,7 +5,7 @@ import {
   ConflictException 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Booking, BookingStatus } from '../entities/booking.entity';
 import { User, UserType } from '../entities/user.entity';
 import { AvailabilitySlot } from '../entities/availability-slot.entity';
@@ -27,82 +27,85 @@ export class BookingService {
     private userRepository: Repository<User>,
     private availabilityService: AvailabilityService,
     private painterAssignmentService: PainterAssignmentService,
+    private dataSource: DataSource,
   ) {}
 
   async createBooking(
     customerId: string,
     createBookingDto: CreateBookingDto,
   ): Promise<{ booking?: Booking; alternatives?: AlternativeSlotDto[] }> {
-    const { startTime, endTime } = createBookingDto;
+    return this.dataSource.transaction(async (transactionalEntityManager) => {
+      const { startTime, endTime } = createBookingDto;
     
-    // Validate customer exists and is a customer
-    const user = await this.userRepository.findOne({
-      where: { id: customerId },
-    });
-
-    if (!user || user.userType !== UserType.CUSTOMER) {
-      throw new NotFoundException('Customer not found');
-    }
-
-    // Validate time range
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    this.availabilityService.timeRangeValidation(start, end);
-
-    // Find available painters for the requested time slot
-    const availableSlots = await this.availabilityService.findAvailablePaintersForTimeSlot(
-      start,
-      end,
-    );
-
-    if (availableSlots.length === 0) {
-      // No painters available - find alternatives
-      const alternatives = await this.painterAssignmentService.findAlternativeSlots(
+      // Validate customer exists and is a customer
+      const user = await this.userRepository.findOne({
+        where: { id: customerId },
+      });
+  
+      if (!user || user.userType !== UserType.CUSTOMER) {
+        throw new NotFoundException('Customer not found');
+      }
+  
+      // Validate time range
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+  
+      this.availabilityService.timeRangeValidation(start, end);
+  
+      // Find available painters for the requested time slot
+      const availableSlots = await this.availabilityService.findAvailablePaintersForTimeSlot(
         start,
         end,
       );
-
-      const alternativeDtos: AlternativeSlotDto[] = alternatives.map(slot => ({
-        id: slot.id,
-        painterId: slot.painterId,
-        startTime: slot.startTime.toISOString(),
-        endTime: slot.endTime.toISOString(),
-        painter: {
-          id: slot.painter.id,
-          firstName: slot.painter.firstName,
-          lastName: slot.painter.lastName,
-        },
-      }));
-
-      return { alternatives: alternativeDtos };
-    }
-
-    // Assign the best painter
-    const selectedSlot = await this.painterAssignmentService.findBestPainter(availableSlots);
-
-    // Create the booking
-    const booking = this.bookingRepository.create({
-      customerId,
-      painterId: selectedSlot.painterId,
-      availabilitySlotId: selectedSlot.id,
-      startTime: start,
-      endTime: end,
-      status: BookingStatus.CONFIRMED,
+  
+      if (availableSlots.length === 0) {
+        // No painters available - find alternatives
+        const alternatives = await this.painterAssignmentService.findAlternativeSlots(
+          start,
+          end,
+        );
+  
+        const alternativeDtos: AlternativeSlotDto[] = alternatives.map(slot => ({
+          id: slot.id,
+          painterId: slot.painterId,
+          startTime: slot.startTime.toISOString(),
+          endTime: slot.endTime.toISOString(),
+          painter: {
+            id: slot.painter.id,
+            firstName: slot.painter.firstName,
+            lastName: slot.painter.lastName,
+          },
+        }));
+  
+        return { alternatives: alternativeDtos };
+      }
+  
+      // Assign the best painter
+      const selectedSlot = await this.painterAssignmentService.findBestPainter(availableSlots);
+  
+      // Create the booking
+      const booking = this.bookingRepository.create({
+        customerId,
+        painterId: selectedSlot.painterId,
+        availabilitySlotId: selectedSlot.id,
+        startTime: start,
+        endTime: end,
+        status: BookingStatus.CONFIRMED,
+      });
+  
+      const savedBooking = await this.bookingRepository.save(booking);
+  
+      // Mark the availability slot as booked
+      await this.availabilityService.markSlotAsBooked(selectedSlot);
+  
+      // Reload with relations
+      const bookingWithRelations = await this.bookingRepository.findOne({
+        where: { id: savedBooking.id },
+        relations: ['customer', 'painter', 'availabilitySlot'],
+      });
+  
+      return { booking: bookingWithRelations || undefined };
     });
-
-    const savedBooking = await this.bookingRepository.save(booking);
-
-    // Mark the availability slot as booked
-    await this.availabilityService.markSlotAsBooked(selectedSlot.id);
-
-    // Reload with relations
-    const bookingWithRelations = await this.bookingRepository.findOne({
-      where: { id: savedBooking.id },
-      relations: ['customer', 'painter', 'availabilitySlot'],
-    });
-
-    return { booking: bookingWithRelations || undefined };
   }
 
   async findUserBookings(userId: string, query: BookingQueryDto = {}): Promise<Booking[]> {
@@ -182,8 +185,7 @@ export class BookingService {
 
     // If booking is cancelled, free up the availability slot
     if (updateStatusDto.status === BookingStatus.CANCELLED && booking.availabilitySlotId) {
-      await this.availabilityService.markSlotAsBooked(booking.availabilitySlotId);
-      // Update the slot to not booked (implementation depends on your needs)
+      await this.availabilityService.markSlotAsAvailable(booking.availabilitySlot);
     }
 
     return updatedBooking;
@@ -229,7 +231,7 @@ export class BookingService {
     const savedBooking = await this.bookingRepository.save(booking);
 
     // Mark the availability slot as booked
-    await this.availabilityService.markSlotAsBooked(slot.id);
+    await this.availabilityService.markSlotAsBooked(slot);
 
     // Reload with relations
     const bookingWithRelations = await this.bookingRepository.findOne({

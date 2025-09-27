@@ -158,11 +158,21 @@ describe('AvailabilityService', () => {
 
   describe('markSlotAsBooked', () => {
     it('should mark slot as booked', async () => {
-      const slotId = 'slot-id';
+      const slot = {
+        id: 'slot-id',
+        painterId: 'painter-id',
+        startTime: new Date('2025-05-18T10:00:00Z'),
+        endTime: new Date('2025-05-18T14:00:00Z'),
+        isBooked: false,
+        createdAt: new Date(),
+        painter: null,
+        bookings: [],
+        version: 1,
+      } as unknown as AvailabilitySlot;
 
-      await service.markSlotAsBooked(slotId);
+      await service.markSlotAsBooked(slot);
 
-      expect(mockAvailabilityRepository.update).toHaveBeenCalledWith(slotId, {
+      expect(mockAvailabilityRepository.update).toHaveBeenCalledWith(slot.id, {
         isBooked: true,
       });
     });

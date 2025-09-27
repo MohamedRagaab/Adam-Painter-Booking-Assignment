@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS availability_slots (
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
     is_booked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    version INTEGER DEFAULT 1,
     
     CONSTRAINT valid_time_range CHECK (end_time > start_time)
 );
@@ -85,3 +86,9 @@ SELECT
     false
 FROM users u WHERE u.email = 'jane.painter@example.com'
 ON CONFLICT DO NOTHING;
+
+-- Add version column to existing availability_slots table if it doesn't exist
+ALTER TABLE availability_slots ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+
+-- Update existing records to have version = 1
+UPDATE availability_slots SET version = 1 WHERE version IS NULL;

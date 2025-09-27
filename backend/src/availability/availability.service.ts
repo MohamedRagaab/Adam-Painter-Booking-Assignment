@@ -96,23 +96,6 @@ export class AvailabilityService {
       .getMany();
   }
 
-  async isSlotAvailable(
-    painterId: string,
-    startTime: Date,
-    endTime: Date,
-  ): Promise<boolean> {
-    const availableSlot = await this.availabilityRepository.findOne({
-      where: {
-        painterId,
-        isBooked: false,
-        startTime: LessThan(startTime),
-        endTime: MoreThan(endTime),
-      },
-    });
-
-    return !!availableSlot;
-  }
-
   async findAvailablePaintersForTimeSlot(
     startTime: Date,
     endTime: Date,
@@ -126,8 +109,28 @@ export class AvailabilityService {
       .getMany();
   }
 
-  async markSlotAsBooked(slotId: string): Promise<void> {
-    await this.availabilityRepository.update(slotId, { isBooked: true });
+  async markSlotAsBooked(slot: AvailabilitySlot): Promise<void> {
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+    
+    if (slot.isBooked) {
+      throw new ConflictException('Slot is already booked');
+    }
+
+    await this.availabilityRepository.update(slot.id, { isBooked: true });
+  }
+
+  async markSlotAsAvailable(slot: AvailabilitySlot): Promise<void> {
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+    
+    if (!slot.isBooked) {
+      throw new ConflictException('Slot is already available');
+    }
+    
+    await this.availabilityRepository.update(slot.id, { isBooked: false });
   }
 
   async findSlotById(slotId: string): Promise<AvailabilitySlot | null> {
