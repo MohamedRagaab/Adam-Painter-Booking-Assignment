@@ -62,8 +62,8 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO availability_slots ("painterId", start_time, end_time, is_booked) 
 SELECT 
     u.id,
-    '2025-05-18 10:00:00+00',
-    '2025-05-18 14:00:00+00',
+    '2025-10-18 10:00:00+00',
+    '2025-10-18 14:00:00+00',
     false
 FROM users u WHERE u.email = 'john.painter@example.com'
 ON CONFLICT DO NOTHING;
@@ -71,8 +71,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO availability_slots ("painterId", start_time, end_time, is_booked) 
 SELECT 
     u.id,
-    '2025-05-18 15:00:00+00',
-    '2025-05-18 18:00:00+00',
+    '2025-10-18 15:00:00+00',
+    '2025-10-18 18:00:00+00',
     false
 FROM users u WHERE u.email = 'john.painter@example.com'
 ON CONFLICT DO NOTHING;
@@ -80,8 +80,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO availability_slots ("painterId", start_time, end_time, is_booked) 
 SELECT 
     u.id,
-    '2025-05-19 09:00:00+00',
-    '2025-05-19 13:00:00+00',
+    '2025-10-19 09:00:00+00',
+    '2025-10-19 13:00:00+00',
     false
 FROM users u WHERE u.email = 'jane.painter@example.com'
 ON CONFLICT DO NOTHING;
